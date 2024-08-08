@@ -11,6 +11,8 @@ from app.services.fetch_news_2 import (
 )
 from app.services.fetch_and_save_symbols_1 import fetch_and_insert_symbols
 from app.services.data_processing_3 import fetch_process_save_news_items
+from app.services.fetch_price_4 import calculate_and_save_predicted_prices
+from app.services.fetch_gap_price_5 import fetch_and_save_symbols
 
 # Load environment variables from .env file
 load_dotenv()
@@ -93,6 +95,36 @@ def fetch_process_save_news_items_endpoint():
             content={
                 "message": "News items fetched, processed, and saved successfully"
             },
+        )
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        raise HTTPException(
+            status_code=500, detail="An error occurred while processing the request"
+        )
+
+
+@router.get("/calculate_and_save_predicted_prices")
+def calculate_and_save_predicted_prices_endpoint():
+    try:
+        calculate_and_save_predicted_prices()
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Predicted prices calculated and saved successfully"},
+        )
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        raise HTTPException(
+            status_code=500, detail="An error occurred while processing the request"
+        )
+
+
+@router.get("/fetch_and_save_last_prices")
+def fetch_and_save_last_prices_endpoint():
+    try:
+        fetch_and_save_symbols()
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Last prices fetched and saved successfully"},
         )
     except Exception as e:
         logging.error(f"An error occurred: {e}")

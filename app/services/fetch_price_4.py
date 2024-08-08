@@ -1,3 +1,5 @@
+# calculate_predict_prices.py
+
 from pymongo import MongoClient
 from tvDatafeed.main import TvDatafeed, Interval
 import pandas as pd
@@ -12,10 +14,8 @@ load_dotenv()
 
 tv = TvDatafeed()
 
-# client = MongoClient("mongodb://localhost:27017/")
 mongo_uri = os.getenv("MONGO_URI")
 client = MongoClient(mongo_uri)
-# client2 = MongoClient("mongodb://localhost:27017")
 client2 = MongoClient(mongo_uri)
 
 cache_collection = client2["StockThaiAnalysis"]["HistoricalDataCache"]
@@ -23,7 +23,7 @@ processed_collection = db["processed"]
 predict_collection = db["predict"]
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
 )
 
 
@@ -146,7 +146,6 @@ def calculate_and_save_predicted_prices():
                 logging.error(f"Error processing entry: {e}")
 
 
-# Run the process
 if __name__ == "__main__":
     logging.info("Calculating and saving predicted prices...")
     calculate_and_save_predicted_prices()

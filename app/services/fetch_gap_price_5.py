@@ -1,3 +1,5 @@
+# fetch_last_prices.py
+
 import os
 import logging
 from dotenv import load_dotenv
@@ -7,9 +9,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from .utils import db
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
 )
 logging.getLogger().disabled = False
 
@@ -105,6 +108,3 @@ def fetch_and_save_symbols():
         logging.error(f"Error fetching and saving symbols: {e}")
     finally:
         driver.quit()
-
-
-fetch_and_save_symbols()
