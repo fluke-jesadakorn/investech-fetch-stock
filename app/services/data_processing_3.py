@@ -1,3 +1,5 @@
+# fetch_process_save_news.py
+
 import logging
 from datetime import datetime
 import requests
@@ -5,21 +7,25 @@ from pymongo import MongoClient, errors
 from bs4 import BeautifulSoup
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from .utils import db
+from dotenv import load_dotenv
+import os
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
 )
 logging.getLogger().disabled = False
 
 # Setup MongoDB connection
-client = MongoClient("mongodb://localhost:27017/")
-db = client["StockThaiAnalysis"]
+load_dotenv()
+
+mongo_uri = os.getenv("MONGO_URI")
+client = MongoClient(mongo_uri)
 news_collection = db["news"]
 processed_collection = db["processed"]
 
 
-# Function to convert strings to numbers
 def convert_to_numbers(input_list, url):
     result = []
     for item in input_list:
@@ -40,7 +46,6 @@ def convert_to_numbers(input_list, url):
     return result
 
 
-# Function to parse financial content from HTML
 def parse_financial_content(content, news_item, url):
     soup = BeautifulSoup(content, "html.parser")
     content_selector = "raw-html"
@@ -106,7 +111,6 @@ def parse_financial_content(content, news_item, url):
     return processed_data
 
 
-# Function to fetch URL content with retries
 def fetch_url(url):
     retries = 3
     for attempt in range(retries):
@@ -127,7 +131,6 @@ def fetch_url(url):
     return None
 
 
-# Function to fetch and process a single news item
 def fetch_and_process_news_item(news_item):
     if "(F45)" in news_item["headline"]:
         url = news_item["url"]
@@ -137,7 +140,6 @@ def fetch_and_process_news_item(news_item):
     return None
 
 
-# Function to process data from Q1 to Q4
 def process_data(data):
     item_dict = {}
     for item in data:
@@ -201,7 +203,6 @@ def process_data(data):
     return item_dict
 
 
-# Function to reshape data for MongoDB insertion
 def reshape_data(data):
     reshaped_data = []
     for symbol, years_data in data.items():
@@ -222,7 +223,6 @@ def reshape_data(data):
     return reshaped_data
 
 
-# Function to save data to MongoDB
 def save_to_db(entries):
     for entry in entries:
         try:
@@ -235,7 +235,6 @@ def save_to_db(entries):
             logging.error(f"Error inserting to MongoDB: {e}")
 
 
-# Main function to fetch, process, and save news items with concurrency
 def fetch_process_save_news_items():
     try:
         processed_urls = {
@@ -271,10 +270,3 @@ def fetch_process_save_news_items():
                     save_to_db(reshaped_data)
             except Exception as e:
                 logging.error(f"Error processing news item {news_item['url']}: {e}")
-
-
-# Run the process
-if __name__ == "__main__":
-    logging.info("Fetching, processing, and saving news items...")
-    fetch_process_save_news_items()
-    logging.info("Finished fetching, processing, and saving news items")

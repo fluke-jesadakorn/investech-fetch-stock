@@ -1,9 +1,15 @@
 import random
 import requests
 from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
 
-mongo_client = MongoClient("mongodb://localhost:27017/")
-db = mongo_client["StockThaiAnalysis"]
+load_dotenv()
+
+mongo_uri = os.getenv("MONGO_URI")
+client = MongoClient(mongo_uri)
+# mongo_client = MongoClient("mongodb://localhost:27017/")
+db = client["StockThaiAnalysis"]
 
 
 def setup_session():

@@ -1,0 +1,20 @@
+cron:
+  - description: "Fetch market data"
+    url: /fetch_market_data
+    schedule: every 24 hours
+
+  - description: "Fetch and save news"
+    url: /fetch_and_save_news
+    schedule: every 24 hours
+
+  - description: "Fetch, process, and save news items"
+    url: /fetch_process_save_news_items
+    schedule: every 24 hours
+
+  - description: "Calculate and save predicted prices"
+    url: /calculate_and_save_predicted_prices
+    schedule: every 24 hours
+
+  - description: "Fetch and save symbols"
+    url: /fetch_and_save_symbols
+    schedule: every 24 hours

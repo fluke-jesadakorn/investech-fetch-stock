@@ -190,7 +190,7 @@ class TvDatafeed:
         symbol: str,
         exchange: str = "NSE",
         interval: Interval = Interval.in_daily,
-        n_bars: int = 10,
+        n_bars: int = 1,
         fut_contract: int = None,
         extended_session: bool = False,
     ) -> pd.DataFrame:

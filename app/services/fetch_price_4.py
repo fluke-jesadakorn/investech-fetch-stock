@@ -1,17 +1,24 @@
 from pymongo import MongoClient
-from tvDatafeed import TvDatafeed, Interval
+from tvDatafeed.main import TvDatafeed, Interval
 import pandas as pd
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dotenv import load_dotenv
+import os
+from .utils import db
 
-# Initialize tvDatafeed
+load_dotenv()
+
 tv = TvDatafeed()
 
-# Setup MongoDB connection
-client = MongoClient("mongodb://localhost:27017/")
-db = client["StockThaiAnalysis"]
-cache_collection = db["HistoricalDataCache"]
+# client = MongoClient("mongodb://localhost:27017/")
+mongo_uri = os.getenv("MONGO_URI")
+client = MongoClient(mongo_uri)
+# client2 = MongoClient("mongodb://localhost:27017")
+client2 = MongoClient(mongo_uri)
+
+cache_collection = client2["StockThaiAnalysis"]["HistoricalDataCache"]
 processed_collection = db["processed"]
 predict_collection = db["predict"]
 
@@ -97,6 +104,8 @@ def process_entry(entry):
             "Symbol": symbol,
             "Year": entry["Year"],
             "Quarter": entry["Quarter"],
+            "Url": entry["Url"],
+            "EPS": entry["EPS"],
             "Datetime": date,
             "ClosePrice": round(close_price, 2),
             "PredictPrice": round(predict_price, 2),

@@ -1,11 +1,12 @@
 from pprint import pprint
 import logging
+from dotenv import load_dotenv
 import pandas as pd
 from pymongo import UpdateOne
-from utils import setup_session, db
+from .utils import setup_session, db
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
 )
 logging.getLogger().disabled = True
 
@@ -36,8 +37,7 @@ def insert_symbols_to_mongo(df, db):
         )
 
 
-session = setup_session()
-
-df_symbols = fetch_symbol(session)
-
-insert_symbols_to_mongo(df_symbols, db)
+def fetch_and_insert_symbols():
+    session = setup_session()
+    df_symbols = fetch_symbol(session)
+    insert_symbols_to_mongo(df_symbols, db)
