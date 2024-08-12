@@ -1,9 +1,7 @@
-# fetch_process_save_news.py
-
 import logging
 from datetime import datetime
 import requests
-from pymongo import MongoClient, errors
+from pymongo import MongoClient, errors, ASCENDING
 from bs4 import BeautifulSoup
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -13,7 +11,8 @@ import os
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(module)s - %(funcName)s - %(message)s",
 )
 logging.getLogger().disabled = False
 
@@ -51,6 +50,8 @@ def parse_financial_content(content, news_item, url):
     content_selector = "raw-html"
     content_block = soup.find("div", {"class": content_selector})
     content = content_block.text if content_block else "N/A"
+
+    logging.info(f"Parsing financial content for URL: {url}")
 
     is12Months = re.search(r"12 Months|Yearly", content)
     quarter = (
@@ -108,6 +109,7 @@ def parse_financial_content(content, news_item, url):
             convert_to_numbers(extracted_eps_list, url) if extracted_eps_list else [0]
         )
 
+    logging.info(f"Completed parsing financial content for URL: {url}")
     return processed_data
 
 
@@ -134,13 +136,17 @@ def fetch_url(url):
 def fetch_and_process_news_item(news_item):
     if "(F45)" in news_item["headline"]:
         url = news_item["url"]
+        logging.info(f"Fetching and processing news item for URL: {url}")
         content = fetch_url(url)
         if content:
             return parse_financial_content(content, news_item, url)
+    else:
+        logging.info(f"Skipping news item with headline: {news_item['headline']}")
     return None
 
 
 def process_data(data):
+    logging.info(f"Processing data for {len(data)} items")
     item_dict = {}
     for item in data:
         if (
@@ -200,10 +206,12 @@ def process_data(data):
                         }
                     )
 
+    logging.info(f"Completed processing data")
     return item_dict
 
 
 def reshape_data(data):
+    logging.info("Reshaping processed data")
     reshaped_data = []
     for symbol, years_data in data.items():
         for year, quarterly_data in years_data.items():
@@ -220,23 +228,44 @@ def reshape_data(data):
                             "EPS": pnl_data["EPS"],
                         }
                         reshaped_data.append(entry)
+    logging.info(f"Completed reshaping data into {len(reshaped_data)} entries")
     return reshaped_data
 
 
 def save_to_db(entries):
-    for entry in entries:
-        try:
-            inserted = processed_collection.insert_one(entry)
-            if inserted.acknowledged:
-                logging.info(
-                    f"Inserted {entry['Symbol']} for {entry['Quarter']} successfully"
-                )
-        except errors.PyMongoError as e:
-            logging.error(f"Error inserting to MongoDB: {e}")
+    try:
+        logging.info(f"Saving {len(entries)} entries to the database")
+        # Sort the entries by Symbol, Year, and Datetime before saving
+        sorted_entries = sorted(
+            entries,
+            key=lambda x: (x["Symbol"], x["Year"], x["Datetime"]),
+            reverse=False,
+        )
+
+        for entry in sorted_entries:
+            try:
+                # Insert the entry into the MongoDB collection
+                inserted = processed_collection.insert_one(entry)
+                if inserted.acknowledged:
+                    logging.info(
+                        f"Inserted {entry['Symbol']} for {entry['Quarter']} successfully"
+                    )
+            except errors.PyMongoError as e:
+                logging.error(f"Error inserting to MongoDB: {e}")
+
+        # Create an index on the fields Symbol, Year, and Datetime to optimize queries
+        processed_collection.create_index(
+            [("Symbol", ASCENDING), ("Year", ASCENDING), ("Datetime", ASCENDING)]
+        )
+        logging.info("Created index on Symbol, Year, and Datetime fields in MongoDB")
+
+    except Exception as e:
+        logging.error(f"Error sorting and saving entries to MongoDB: {e}")
 
 
 def fetch_process_save_news_items():
     try:
+        logging.info("Starting fetch, process, and save of news items")
         processed_urls = {
             item["Url"]
             for item in processed_collection.find({}, {"Url": 1})
@@ -270,3 +299,5 @@ def fetch_process_save_news_items():
                     save_to_db(reshaped_data)
             except Exception as e:
                 logging.error(f"Error processing news item {news_item['url']}: {e}")
+
+    logging.info("Completed fetch, process, and save of news items")

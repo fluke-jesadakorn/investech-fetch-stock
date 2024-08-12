@@ -1,5 +1,3 @@
-# calculate_predict_prices.py
-
 from pymongo import MongoClient
 from tvDatafeed.main import TvDatafeed, Interval
 import pandas as pd
@@ -23,16 +21,21 @@ processed_collection = db["processed"]
 predict_collection = db["predict"]
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(module)s - %(funcName)s - %(message)s",
 )
 
 
 def get_price_on_date(symbol, date, retries=3, backoff_factor=2):
+    logging.info(f"Fetching price for {symbol} on {date.date()}")
     cached_data = cache_collection.find_one({"symbol": symbol})
+
     if cached_data:
+        logging.info(f"Using cached data for {symbol}")
         data = pd.DataFrame(cached_data["data"])
         data["datetime"] = pd.to_datetime(data["datetime"])
     else:
+        logging.info(f"No cache available, fetching from TV API for {symbol}")
         attempt = 0
         while attempt < retries:
             try:
@@ -53,20 +56,21 @@ def get_price_on_date(symbol, date, retries=3, backoff_factor=2):
                 cache_collection.insert_one(
                     {"symbol": symbol, "data": data_for_mongo.to_dict("list")}
                 )
+                logging.info(f"Data fetched and cached for {symbol}")
                 break
             except Exception as e:
                 if "429" in str(e):
                     attempt += 1
                     sleep_time = backoff_factor**attempt
-                    logging.info(
-                        f"Retrying in {sleep_time} seconds due to rate limit..."
+                    logging.warning(
+                        f"Rate limit reached. Retrying in {sleep_time} seconds..."
                     )
                     time.sleep(sleep_time)
                 elif "Connection to remote host was lost" in str(e):
                     attempt += 1
                     sleep_time = backoff_factor**attempt
-                    logging.info(
-                        f"Retrying in {sleep_time} seconds due to connection issue..."
+                    logging.warning(
+                        f"Connection lost. Retrying in {sleep_time} seconds..."
                     )
                     time.sleep(sleep_time)
                 else:
@@ -75,15 +79,18 @@ def get_price_on_date(symbol, date, retries=3, backoff_factor=2):
 
     data_filtered = data[data["datetime"].dt.date == date.date()]
     if not data_filtered.empty:
+        logging.info(f"Price found for {symbol} on {date.date()}")
         return data_filtered.iloc[-1]["close"]
     else:
-        logging.info(f"No trading data available for {symbol} on {date.date()}")
+        logging.warning(f"No trading data available for {symbol} on {date.date()}")
         return None
 
 
 def process_entry(entry):
     symbol = entry["Symbol"]
     date = entry["Datetime"]
+    logging.info(f"Processing entry for {symbol} on {date}")
+
     close_price = get_price_on_date(symbol, date)
 
     if close_price is not None:
@@ -93,7 +100,9 @@ def process_entry(entry):
 
         sum_eps = previous_eps + last_eps
         if sum_eps == 0:
-            logging.warning(f"Sum of EPS is zero for symbol {symbol} on {date}")
+            logging.warning(
+                f"Sum of EPS is zero for {symbol} on {date}. Skipping entry."
+            )
             return
 
         price_per_sum_eps = last_price / sum_eps
@@ -131,9 +140,14 @@ def process_entry(entry):
                 )
         else:
             logging.info(f"Predicted price for {symbol} on {date} already exists")
+    else:
+        logging.warning(
+            f"Close price not found for {symbol} on {date}. Skipping entry."
+        )
 
 
 def calculate_and_save_predicted_prices():
+    logging.info("Starting calculation of predicted prices")
     processed_data = list(processed_collection.find())
 
     with ThreadPoolExecutor(max_workers=5) as executor:
@@ -144,6 +158,8 @@ def calculate_and_save_predicted_prices():
                 future.result()
             except Exception as e:
                 logging.error(f"Error processing entry: {e}")
+
+    logging.info("Finished calculating and saving predicted prices")
 
 
 if __name__ == "__main__":
