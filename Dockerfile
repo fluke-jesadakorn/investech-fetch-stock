@@ -24,4 +24,4 @@ COPY . .
 EXPOSE 8080
 
 # Run the job by default (for jobs)
-CMD ["python", "-m", "app.run_long_jobs"]
+CMD ["python", "-m", "app.main"]
