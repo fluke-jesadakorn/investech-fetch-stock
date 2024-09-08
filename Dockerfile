@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port 8000 to the outside world
-EXPOSE 8000
+EXPOSE 8080
 
 # Run the job by default (for jobs)
 CMD ["python", "-m", "app.run_long_jobs"]
