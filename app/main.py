@@ -1,15 +1,15 @@
 import logging
 from dotenv import load_dotenv
 import os
-from app.services.fetch_news_2 import (
+from services.fetch_news_2 import (
     setup_session_with_proxy,
     fetch_symbols_from_mongo,
     fetch_and_save_news,
 )
-from app.services.fetch_and_save_symbols_1 import fetch_and_insert_symbols
-from app.services.data_processing_3 import fetch_process_save_news_items
-from app.services.fetch_price_4 import calculate_and_save_predicted_prices
-from app.services.fetch_gap_price_5 import fetch_and_save_symbols
+from services.fetch_and_save_symbols_1 import fetch_and_insert_symbols
+from services.data_processing_3 import fetch_process_save_news_items
+from services.fetch_price_4 import calculate_and_save_predicted_prices
+from services.fetch_gap_price_5 import fetch_and_save_symbols
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,21 +19,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(asctime)s - %(message)s"
 )
 logging.getLogger().disabled = False
-
-import logging
-from dotenv import load_dotenv
-from app.services.fetch_news_2 import fetch_symbols_from_mongo, fetch_and_save_news
-from app.services.fetch_and_save_symbols_1 import fetch_and_insert_symbols
-from app.services.data_processing_3 import fetch_process_save_news_items
-from app.services.fetch_price_4 import calculate_and_save_predicted_prices
-from app.services.fetch_gap_price_5 import fetch_and_save_symbols
-
-# Load environment variables from .env
-load_dotenv()
-
-# Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
-
 
 # Define a function to run the job based on JOB_ID
 def run_job(job_id):

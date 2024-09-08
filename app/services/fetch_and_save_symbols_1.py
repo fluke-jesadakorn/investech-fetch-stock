@@ -118,7 +118,6 @@ def insert_symbols_to_mongo(df: pd.DataFrame, db: MongoClient) -> None:
     else:
         logging.warning("No operations to execute in bulk write")
 
-
 def fetch_and_insert_symbols() -> None:
     """
     Fetches symbols using a session and inserts them into the MongoDB collection.
