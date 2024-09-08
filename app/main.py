@@ -123,7 +123,7 @@ async def fetch_and_save_last_prices_endpoint():
         )
 
 
-# Run the application
+# # Run the application
 if __name__ == "__main__":
     import uvicorn
 
