@@ -1,27 +1,46 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.12.4-alpine3.19
+# Stage 1: Build dependencies
+FROM python:3.12.4-alpine3.19 AS build
 
-# Set environment variables to prevent Python from writing .pyc files to disk and to buffer stdout and stderr
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set the working directory in the container
+# Install build dependencies
+RUN apk --no-cache add git gcc musl-dev libffi-dev
+
+# Set the working directory
 WORKDIR /app
 
-# Install git
-RUN apk update && apk add --no-cache git
-
-# Copy the requirements file into the container at /app
+# Copy the requirements file and install dependencies in a virtual environment
 COPY requirements.txt .
 
-# Install the dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Create virtual environment and install dependencies into .venv
+RUN python -m venv /app/.venv \
+    && /app/.venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the working directory contents into the container at /app
+# Stage 2: Create final image
+FROM python:3.12.4-alpine3.19
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app/.venv/lib/python3.12/site-packages"
+
+# Set the working directory
+WORKDIR /app
+
+# Install only the system dependencies needed at runtime
+RUN apk --no-cache add git
+
+# Copy virtual environment from the build stage
+COPY --from=build /app/.venv /app/.venv
+
+# Copy the application code
 COPY . .
 
-# Expose port 8000 to the outside world
+# Expose port 8080
 EXPOSE 8080
 
-# Run the job by default (for jobs)
-CMD ["python", "-m", "app.main"]
+# Run the application using the virtual environment
+CMD ["/app/.venv/bin/python", "-m", "app.main"]

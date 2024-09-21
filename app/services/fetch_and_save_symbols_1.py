@@ -1,9 +1,10 @@
 import logging
 import pandas as pd
-from pymongo import UpdateOne, MongoClient
+from pymongo import UpdateOne
 from requests import Session
 from typing import List, Dict, Any
 from .utils import setup_session, db
+from pymongo.database import Database
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,13 +72,15 @@ def fetch_symbol(session: Session) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def insert_symbols_to_mongo(df: pd.DataFrame, db: MongoClient) -> None:
+def insert_symbols_to_mongo(
+    df: pd.DataFrame, db: Database
+) -> None:  # Update type hint to Database
     """
     Inserts or updates symbols in the MongoDB collection.
 
     Args:
         df (pd.DataFrame): The DataFrame containing symbol data to insert or update.
-        db (MongoClient): The MongoDB client instance to interact with the database.
+        db (Database): The MongoDB database instance to interact with.
     """
     symbols_collection = db.symbols
     operations: List[UpdateOne] = []
@@ -107,16 +110,15 @@ def insert_symbols_to_mongo(df: pd.DataFrame, db: MongoClient) -> None:
         )
 
     if operations:
-
         logging.info(f"Executing bulk write with {len(operations)} operations")
         result = symbols_collection.bulk_write(operations, ordered=False)
         logging.info(
             f"Bulk write completed: {result.upserted_count} upserted, "
             f"{result.matched_count} matched, {result.modified_count} modified"
         )
-
     else:
         logging.warning("No operations to execute in bulk write")
+
 
 def fetch_and_insert_symbols() -> None:
     """

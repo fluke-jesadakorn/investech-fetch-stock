@@ -83,7 +83,7 @@ def fetch_stock_price(symbol, headers):
 def fetch_and_save_symbols():
     logging.info("Starting the fetch and save symbols process")
     options = Options()
-    options.headless = True
+    options.add_argument("--headless")
     driver = webdriver.Chrome(
         service=Service(ChromeDriverManager().install()), options=options
     )
